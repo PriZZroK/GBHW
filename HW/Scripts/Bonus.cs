@@ -9,28 +9,36 @@ namespace HomeWork
     public class Bonus : MonoBehaviour, IBonus, ITriggerEnter
     {
         [SerializeField] private float BonusTime;
-        private float _timer;
         [SerializeField] private float MultipleSpeed;
         private GameObject _player;
         private bool _startTimer;
-        
+        private Events _event;
+        private CanvasController _canvas;
+        [SerializeField] private string BonusText;
 
+        void Awake()
+        {
+            _event = GameObject.FindGameObjectWithTag("Event").GetComponent<Events>();
+        }
         void Start()
         {
+            _canvas = GameObject.FindGameObjectWithTag("Canvas").GetComponent<CanvasController>();
             _player = GameObject.FindGameObjectWithTag("Player");
             this.gameObject.GetComponent<Collider>().isTrigger = true;
         }
+
         public void DeleteBonus()
         {
             _player.GetComponent<Player>().Speed /= MultipleSpeed;
+            _event._action -= () => _event.ChangeText(BonusText);
             Destroy(this.gameObject);
-            
         }
-
+        
         public void ExecuteBonus()
         {
-            _timer = BonusTime;
-            _player.GetComponent<Player>().Speed *= MultipleSpeed;
+            _player.GetComponent<Player>().Speed = MultipleSpeed;
+            _canvas.BuffCount++;
+            _canvas.CheckBuffCount();
             _startTimer = true;
         }
 
@@ -40,19 +48,19 @@ namespace HomeWork
             {
                 this.gameObject.GetComponent<MeshRenderer>().enabled = false;
                 this.gameObject.GetComponent<BoxCollider>().enabled = false;
-                ExecuteBonus();
+                _event._action += () => _event.ChangeText(BonusText);
+                _event.InvokeAction();
+                StartCoroutine(BonusTimer(BonusTime));
             }
         }
 
-
-        void Update()
+        IEnumerator BonusTimer(float _time)
         {
-            _timer -= Time.deltaTime;
-            if (_timer <= 0 & _startTimer)
-            {
-                DeleteBonus();
-            }
+            ExecuteBonus();
+            yield return new WaitForSeconds(_time);
+            DeleteBonus();
         }
+
     }
 }
 

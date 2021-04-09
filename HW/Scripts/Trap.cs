@@ -7,12 +7,16 @@ namespace HomeWork
     public class Trap : MonoBehaviour, IBonus, ITriggerEnter
     {
         [SerializeField] private float BonusTime;
-        private float _timer;
         [SerializeField] private float MultipleSpeed;
         private GameObject _player;
         private bool _startTimer;
+        private Events _event;
+        [SerializeField] private string DebuffText;
 
-
+        void Awake()
+        {
+            _event = GameObject.FindGameObjectWithTag("Event").GetComponent<Events>();
+        }
         void Start()
         {
             _player = GameObject.FindGameObjectWithTag("Player");
@@ -21,13 +25,12 @@ namespace HomeWork
         public void DeleteBonus()
         {
             _player.GetComponent<Player>().Speed /= MultipleSpeed;
+            _event._action -= () => _event.ChangeText(DebuffText);
             Destroy(this.gameObject);
-
         }
 
         public void ExecuteBonus()
         {
-            _timer = BonusTime;
             _player.GetComponent<Player>().Speed *= MultipleSpeed;
             _startTimer = true;
         }
@@ -38,19 +41,20 @@ namespace HomeWork
             {
                 this.gameObject.GetComponent<MeshRenderer>().enabled = false;
                 this.gameObject.GetComponent<BoxCollider>().enabled = false;
-                ExecuteBonus();
+                _event._action += () => _event.ChangeText(DebuffText);
+                _event.InvokeAction();
+                StartCoroutine(BonusTimer(BonusTime));
             }
         }
 
 
-        void Update()
+        IEnumerator BonusTimer(float _time)
         {
-            _timer -= Time.deltaTime;
-            if (_timer <= 0 & _startTimer)
-            {
-                DeleteBonus();
-            }
+            ExecuteBonus();
+            yield return new WaitForSeconds(_time);
+            DeleteBonus();
         }
+
     }
 }
 
